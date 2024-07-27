@@ -1,0 +1,126 @@
+esphome:
+  name: kauf-rgbsw
+  friendly_name: Kauf RGB Sw 
+
+esp8266:
+  board: esp07s
+
+# Enable logging
+logger:
+  level: DEBUG
+
+api:
+
+ota:
+  - platform: esphome
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "kauf Hotspot"
+    password: !secret fallback_hotspot_password
+
+captive_portal:
+
+mqtt:
+  broker: !secret mqtt_broker
+
+web_server:
+  port: 80
+  version: 3
+
+binary_sensor:
+
+  - platform: gpio
+    id: main_button
+    name: Main Button
+    pin:
+      number: GPIO13
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+
+    on_press:
+        then:
+          - mqtt.publish:
+                topic: zigbee2mqtt/DinningRoomLight/set/state_white
+                payload: "TOGGLE"
+
+  - platform: status
+    name: Status
+
+
+# PWM outputs for each LED channel
+# https://esphome.io/components/output/esp8266_pwm.html
+output:
+
+    # small light pwm
+  - platform: esp8266_pwm
+    pin: GPIO0
+    frequency: 250 Hz
+    id: pwm1_red
+    inverted: true
+  - platform: esp8266_pwm
+    pin: GPIO12
+    frequency: 250 Hz
+    id: pwm1_green
+    inverted: true
+  - platform: esp8266_pwm
+    pin: GPIO2
+    frequency: 250 Hz
+    id: pwm1_blue
+    inverted: true
+
+    # big light pwm
+  - platform: esp8266_pwm
+    pin: GPIO14
+    frequency: 250 Hz
+    id: pwm2_red
+  - platform: esp8266_pwm
+    pin: GPIO5
+    frequency: 250 Hz
+    id: pwm2_green
+    max_power: .4
+  - platform: esp8266_pwm
+    pin: GPIO4
+    frequency: 250 Hz
+    id: pwm2_blue
+    max_power: .35
+
+light:
+
+  - platform: rgb
+    name: Small Light
+    id: small_light
+    red: pwm1_red
+    green: pwm1_green
+    blue: pwm1_blue
+    default_transition_length: 0s
+    restore_mode: RESTORE_DEFAULT_ON
+
+  - platform: rgb
+    name: Big Light
+    id: big_light
+    red: pwm2_red
+    green: pwm2_green
+    blue: pwm2_blue
+    default_transition_length: 0s
+    restore_mode: RESTORE_DEFAULT_ON
+
+sensor:
+
+  - platform: uptime
+    name: Uptime
+    update_interval: 60s
+    entity_category: diagnostic
+
+  - platform: wifi_signal
+    name: "WiFi Signal Sensor"
+    update_interval: 60s
+
+text_sensor:
+  - platform: version
+    name: "ESPHome Version"
+    hide_timestamp: true
