@@ -31,11 +31,48 @@ web_server:
 font:
   - file: 'gfonts://Roboto'
     id: font1
-    size: 8
+    size: 30
 
 spi:
   clk_pin: 13
   mosi_pin: 14
+
+sensor:
+  - platform: homeassistant
+    name: "PrusaMK4PrinterProgress"
+    id: print_progress
+    entity_id: ItemStateChangedEvent.PrusaMK4PrinterProgress
+
+  - platform: homeassistant
+    name: "K1PrinterProgress"
+    id: k1print_progress
+    entity_id: ItemStateChangedEvent.K1PrinterProgress
+
+  - platform: homeassistant
+    name: "PrusaPrinterProgress"
+    id: mk3print_progress
+    entity_id: ItemStateChangedEvent.PrusaPrinterProgress
+
+  - platform: homeassistant
+    name: "Temperature"
+    id: outside_temperature
+    entity_id: ItemStateChangedEvent.Temperature
+
+text_sensor:
+  - platform: homeassistant
+    name: "K1PrinterPath"
+    id: k1print_path
+    entity_id: ItemStateChangedEvent.K1PrinterPath
+
+  - platform: homeassistant
+    name: "PrusaPrinterPath"
+    id: mk3print_path
+    entity_id: ItemStateChangedEvent.PrusaPrinterPath
+
+  - platform: homeassistant
+    name: "Weather_Forecast_Text"
+    id: weather_forcast
+    entity_id: ItemStateChangedEvent.Weather_Forecast_Text
 
 display:
   - platform: waveshare_epaper
@@ -44,7 +81,17 @@ display:
     busy_pin: 25
     reset_pin: 26
     model: 7.50in-bV3
-    update_interval: 30sec
+    update_interval: 60sec
     reset_duration: 2ms
     lambda: |-
-      it.print(0, 0, id(font1), "Hello World!");
+      it.printf(20, 40, id(font1), "Outside Temperature: %.1f", id(outside_temperature).state);
+      it.printf(20, 80, id(font1), "Weather Forecast: %s", id(weather_forcast).state.c_str());
+      it.printf(20, 150, id(font1), "Prusa MK4 Printer Progress: %.1f", id(print_progress).state);
+      it.rectangle(80, 200, 600, 30);
+      it.filled_rectangle(80, 200, 6*id(print_progress).state, 30 );
+      it.printf(20, 250, id(font1), "K1 Printer Progress: %.1f %s", id(k1print_progress).state * 100, id(k1print_path).state.c_str());
+      it.rectangle(80, 300, 600, 30);
+      it.filled_rectangle(80, 300, 6*id(k1print_progress).state * 100, 30 );
+      it.printf(20, 350, id(font1), "Prusa MK3S Printer Progress: %.1f %s", id(mk3print_progress).state * 100, id(mk3print_path).state.c_str());
+      it.rectangle(80, 400, 600, 30);
+      it.filled_rectangle(80, 400, 6*id(mk3print_progress).state * 100, 30 );
