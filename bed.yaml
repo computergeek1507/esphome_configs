@@ -3,6 +3,7 @@ esphome:
 
 esp8266:
   board: d1_mini
+  restore_from_flash: true
 
 # Enable logging
 logger:
@@ -65,6 +66,6 @@ number:
     restore_value: true
     min_value: 0
     max_value: 3.5
-    step: 0.05
+    step: 0.1
     icon: mdi:arrow-collapse-down
     unit_of_measurement: V 

@@ -47,7 +47,13 @@ binary_sensor:
           - mqtt.publish:
                 topic: zigbee2mqtt/DinningRoomLight/set/state_white
                 payload: "TOGGLE"
-
+    on_double_click:
+        min_length: 250ms
+        max_length: 750ms
+        then:
+          - mqtt.publish:
+                topic: zigbee2mqtt/DinningRoomLight/set/state
+                payload: "TOGGLE"
   - platform: status
     name: Status
 
