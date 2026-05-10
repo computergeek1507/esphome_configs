@@ -11,6 +11,8 @@ logger:
   level: DEBUG
 
 api:
+  encryption:
+    key: !secret encryption_key
 
 ota:
   - platform: esphome
@@ -49,9 +51,9 @@ sensor:
     entity_id: ItemStateChangedEvent.K1PrinterProgress
 
   - platform: homeassistant
-    name: "PrusaPrinterProgress"
-    id: mk3print_progress
-    entity_id: ItemStateChangedEvent.PrusaPrinterProgress
+    name: "CoreOnePrinterStatus"
+    id: coreoneprint_progress
+    entity_id: ItemStateChangedEvent.CoreOnePrinterStatus
 
   - platform: homeassistant
     name: "Temperature"
@@ -65,9 +67,9 @@ text_sensor:
     entity_id: ItemStateChangedEvent.K1PrinterPath
 
   - platform: homeassistant
-    name: "PrusaPrinterPath"
-    id: mk3print_path
-    entity_id: ItemStateChangedEvent.PrusaPrinterPath
+    name: "CoreOnePrinterPath"
+    id: coreoneprint_path
+    entity_id: ItemStateChangedEvent.CoreOnePrinterPath
 
   - platform: homeassistant
     name: "Weather_Forecast_Text"
@@ -92,6 +94,6 @@ display:
       it.printf(20, 250, id(font1), "K1 Printer Progress: %.1f %s", id(k1print_progress).state * 100, id(k1print_path).state.c_str());
       it.rectangle(80, 300, 600, 30);
       it.filled_rectangle(80, 300, 6*id(k1print_progress).state * 100, 30 );
-      it.printf(20, 350, id(font1), "Prusa MK3S Printer Progress: %.1f %s", id(mk3print_progress).state * 100, id(mk3print_path).state.c_str());
+      it.printf(20, 350, id(font1), "Core One Printer Progress: %.1f %s", id(coreoneprint_progress).state * 100, id(coreoneprint_path).state.c_str());
       it.rectangle(80, 400, 600, 30);
-      it.filled_rectangle(80, 400, 6*id(mk3print_progress).state * 100, 30 );
+      it.filled_rectangle(80, 400, 6*id(coreoneprint_progress).state * 100, 30 );

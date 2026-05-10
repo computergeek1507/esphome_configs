@@ -1,0 +1,174 @@
+esphome:
+  name: garage
+  friendly_name: Garage Controller
+
+esp32:
+  board: esp32-s3-devkitc-1
+  variant: esp32s3
+  framework:
+    type: esp-idf
+
+# ─── W5500 SPI Ethernet ────────────────────────────────────────────────────────
+# Pins are hardwired on the Waveshare ESP32-S3-ETH — do not change these.
+ethernet:
+  type: W5500
+  mosi_pin: GPIO11
+  miso_pin: GPIO12
+  clk_pin: GPIO13
+  cs_pin: GPIO14
+  interrupt_pin: GPIO10
+  reset_pin: GPIO9
+  on_connect:
+    - light.turn_on:
+        id: status_light
+        red: 100%
+        green: 50%
+        blue: 0%
+        brightness: 40%
+        effect: Pulse         # orange pulse = ethernet up, MQTT reconnecting
+  on_disconnect:
+    - light.turn_on:
+        id: status_light
+        red: 100%
+        green: 0%
+        blue: 0%
+        brightness: 40%
+        effect: Pulse         # red pulse = no ethernet
+
+logger:
+  level: INFO
+
+web_server:
+  port: 80
+  version: 3
+
+# ─── OTA ───────────────────────────────────────────────────────────────────────
+ota:
+  - platform: esphome
+
+# ─── MQTT ──────────────────────────────────────────────────────────────────────
+mqtt:
+  broker: !secret mqtt_broker
+  port: 1883
+  client_id: garageArduino2
+  # No username/password — matches original MQTT_USER/MQTT_PASS NULL
+  birth_message:
+    topic: clients/arduino/
+    payload: "online"
+  will_message:
+    topic: clients/arduino/
+    payload: dead
+  keepalive: 60s
+  on_connect:
+    - light.turn_on:
+        id: status_light
+        red: 0%
+        green: 100%
+        blue: 0%
+        brightness: 40%
+        effect: none          # green solid = fully connected
+  on_disconnect:
+    - light.turn_on:
+        id: status_light
+        red: 100%
+        green: 50%
+        blue: 0%
+        brightness: 40%
+        effect: Pulse         # orange pulse = ethernet up, MQTT reconnecting
+
+# ─── DS18B20 OneWire bus (was pin 3 on Arduino) ────────────────────────────────
+# GPIO8 is used as camera power control on the camera variant of this board.
+# If you have the camera variant and are not using the camera, it is still safe
+# to use GPIO8 here as a general GPIO.
+one_wire:
+  - platform: gpio
+    pin: GPIO47
+
+# ─── Sensors ───────────────────────────────────────────────────────────────────
+sensor:
+  # Temperature — ESPHome reads Celsius; lambda converts to Fahrenheit.
+  # Publishes every 30s only if change exceeds 0.1°F (matches original logic).
+  - platform: dallas_temp
+    index: 0
+    name: "Garage Temperature"
+    id: garage_temp
+    state_topic: arduino/garagetemp
+    update_interval: 30s
+    filters:
+      - lambda: return x * 9.0 / 5.0 + 32.0;
+      - delta: 0.1
+
+  # Car 1 ultrasonic distance (was A2/pin 16 via NewPing single-pin mode).
+  # !! REWIRING REQUIRED: NewPing can share trigger+echo on one pin; ESPHome
+  #    cannot. You must run a separate wire for trigger (GPIO15) and echo (GPIO16).
+  - platform: ultrasonic
+    trigger_pin: GPIO1
+    echo_pin: GPIO2
+    name: "Car 1 Distance"
+    id: car1_distance
+    state_topic: arduino/garagecar1
+    update_interval: 10s
+    timeout: 4m           # ≈ 3.4m max range; original was 300cm
+    filters:
+  #    - multiply: 100       # ESPHome returns meters → convert to centimeters
+      - delta: 11           # only publish if change > 11 cm (matches original)
+
+  # Car 2 ultrasonic distance (was A3/pin 17 via NewPing single-pin mode).
+  # !! REWIRING REQUIRED: same as Car 1 above.
+  - platform: ultrasonic
+    trigger_pin: GPIO15
+    echo_pin: GPIO18
+    name: "Car 2 Distance"
+    id: car2_distance
+    state_topic: arduino/garagecar2
+    update_interval: 10s
+    timeout: 4m
+    filters:
+ #     - multiply: 100
+      - delta: 11
+
+# ─── Binary Sensors ────────────────────────────────────────────────────────────
+binary_sensor:
+  # Standard door reed/contact switch (was pin 7, digital INPUT).
+  # Add pullup: true if your switch connects to ground without an external resistor.
+  - platform: gpio
+    pin:
+      number: GPIO16
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    name: "Garage Standard Door"
+    id: garage_std_door
+    state_topic: arduino/garagestddoor
+
+  # Closed-position reed/contact switch.
+  - platform: gpio
+    pin:
+      number: GPIO17
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    name: "Garage Door Closed"
+    id: garage_door_closed
+    state_topic: arduino/garageclose
+
+# ─── Status LED (WS2812 on GPIO21) ────────────────────────────────────────────
+# Green solid     = MQTT connected (fully operational)
+# Orange pulsing  = ethernet up, MQTT reconnecting
+# Red pulsing     = no ethernet
+light:
+  - platform: esp32_rmt_led_strip
+    pin: GPIO21
+    num_leds: 1
+    chipset: WS2812
+    rgb_order: GRB
+    name: "Status LED"
+    id: status_light
+    restore_mode: ALWAYS_OFF
+    effects:
+      - pulse:
+          name: "Pulse"
+          transition_length: 500ms
+          update_interval: 500ms

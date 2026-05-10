@@ -62,6 +62,7 @@ text_sensor:
     ssid:
       name: ESP Connected SSID
 
+psram:
 
 # Display dimming
 globals:
